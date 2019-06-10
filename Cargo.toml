@@ -1,0 +1,12 @@
+[package]
+name = "rgbot"
+version = "0.1.0"
+authors = ["Robin Appelman <robin@icewind.nl>"]
+edition = "2018"
+
+[dependencies]
+serenity = { version = "0.6.0-rc.1", features = ["cache"], path = "../serenity" }
+regex = "1.1"
+err-derive = "0.1"
+env_logger = "~0.4"
+log = "~0.3"
