@@ -57,7 +57,6 @@ impl Handler {
     fn get_or_create_role(&self, context: &Context, color: Colour, guild: &RwLock<Guild>) -> Result<Role> {
         let name = format!("#{}", color.hex());
         let color_position = self.get_color_role_position(&mut guild.read())?;
-        dbg!(&color_position);
         if let Some(role) = guild.read().role_by_name(&name) {
             return Ok(role.clone());
         }
@@ -74,8 +73,6 @@ impl Handler {
     fn assign_color(&self, context: Context, user: User, guild: Arc<RwLock<Guild>>, color: Colour) -> Result<(String, String)> {
         let role = self.get_or_create_role(&context, color, &guild)?;
         let mut member = guild.read().member(&context, user.id)?;
-
-        println!("Adding role {} for {}", role.name, member.nick.clone().unwrap_or_default());
 
         let old_colors: Vec<RoleId> = member.roles(context.cache.clone()).unwrap_or(vec![]).iter()
             .filter(|r| self.color_regex.is_match(&r.name))
