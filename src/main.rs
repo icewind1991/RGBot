@@ -74,12 +74,13 @@ impl Handler {
         let role = self.get_or_create_role(&context, color, &guild)?;
         let mut member = guild.read().member(&context, user.id)?;
 
-        let old_colors: Vec<RoleId> = member.roles(context.cache.clone()).unwrap_or(vec![]).iter()
+        let old_colors: Vec<RoleId> = member.roles(&context.cache).unwrap_or_default()
+            .iter()
             .filter(|r| self.color_regex.is_match(&r.name))
             .map(|r| r.id)
             .collect();
-        member.remove_roles(context.http.clone(), &old_colors)?;
-        member.add_role(context.http.clone(), role.id)?;
+        member.remove_roles(&context.http, &old_colors)?;
+        member.add_role(&context.http, role.id)?;
         self.cleanup_roles(context, &guild, role.id)?;
         Ok((role.name, user.name))
     }
@@ -90,28 +91,23 @@ impl Handler {
             .map(|role| role.clone())
             .collect();
 
-        let empty_roles: Vec<Role> = guild.read().roles
+        let empty_roles: Vec<RoleId> = guild.read().roles
             .values()
             .filter(|role| self.color_regex.is_match(&role.name))
             .filter(|role| !used_roles.contains(&role.id))
             .filter(|role| role.id != used)
-            .map(|role| role.clone())
+            .map(|role| role.id.clone())
             .collect();
 
         let guild = guild.write();
         for empty_role in empty_roles {
-            guild.delete_role(context.http.clone(), empty_role.id)?;
+            guild.delete_role(context.http.clone(), empty_role)?;
         }
         Ok(())
     }
 }
 
 impl EventHandler for Handler {
-    // Set a handler for the `message` event - so that whenever a new message
-    // is received - the closure (or function) passed will be called.
-    //
-    // Event handlers are dispatched through a threadpool, and so multiple
-    // events can be dispatched simultaneously.
     fn message(&self, context: Context, msg: Message) {
         if let Some(color) = self.parse_color(&msg.content) {
             if let Some(guild) = msg.guild(context.cache.clone()) {
@@ -129,12 +125,6 @@ impl EventHandler for Handler {
         }
     }
 
-    // Set a handler to be called on the `ready` event. This is called when a
-    // shard is booted, and a READY payload is sent by Discord. This payload
-    // contains data like the current user's guild Ids, current user data,
-    // private channels, and more.
-    //
-    // In this case, just print what the current user's username is.
     fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
     }
@@ -143,19 +133,11 @@ impl EventHandler for Handler {
 fn main() {
     env_logger::init().expect("Unable to init env_logger");
 
-    // Configure the client with your Discord bot token in the environment.
     let token = env::var("DISCORD_TOKEN")
         .expect("Expected a token in the environment");
 
-    // Create a new instance of the Client, logging in as a bot. This will
-    // automatically prepend your bot token with "Bot ", which is a requirement
-    // by Discord for bot users.
     let mut client = Client::new(&token, Handler::new()).expect("Err creating client");
 
-    // Finally, start a single shard, and start listening to events.
-    //
-    // Shards will automatically attempt to reconnect, and will perform
-    // exponential backoff until it reconnects.
     if let Err(why) = client.start() {
         println!("Client error: {:?}", why);
     }
