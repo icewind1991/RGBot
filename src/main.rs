@@ -32,13 +32,9 @@ impl From<DiscordError> for BotError {
 
 fn background_contrast(color: Colour) -> f32 {
     let background_dark: Colour = Colour::from(0x36393E);
-    let background_light: Colour = Colour::from(0xFFFFFF);
 
     let rgb = RGB8::from(color.tuple());
-    let contrast_light = contrast(RGB8::from(background_light.tuple()), rgb);
-    let contrast_dark = contrast(RGB8::from(background_dark.tuple()), rgb);
-
-    f32::min(contrast_dark, contrast_light)
+    contrast(RGB8::from(background_dark.tuple()), rgb)
 }
 
 type Result<T> = std::result::Result<T, BotError>;
