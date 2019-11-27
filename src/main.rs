@@ -21,13 +21,7 @@ enum BotError {
     #[error(display = "missing \"colors\" base role")]
     NoColorRole,
     #[error(display = "discord error: {}", _0)]
-    DiscordError(#[error(cause)] DiscordError),
-}
-
-impl From<DiscordError> for BotError {
-    fn from(f: DiscordError) -> Self {
-        BotError::DiscordError(f)
-    }
+    DiscordError(#[error(source)] DiscordError),
 }
 
 fn background_contrast(color: Colour) -> f32 {
@@ -168,7 +162,7 @@ impl EventHandler for Handler {
 }
 
 fn main() {
-    env_logger::init().expect("Unable to init env_logger");
+    env_logger::init();
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let min_contrast: f32 = env::var("MIN_CONTRAST")
